@@ -146,7 +146,6 @@ client *createClient(connection *conn) {
     c->bpop.timeout = 0;
     c->bpop.keys = dictCreate(&objectKeyHeapPointerValueDictType,NULL);
     c->bpop.target = NULL;
-    c->bpop.listwheres = NULL;
     c->bpop.xread_group = NULL;
     c->bpop.xread_consumer = NULL;
     c->bpop.xread_group_noack = 0;
@@ -1213,7 +1212,6 @@ void freeClient(client *c) {
     /* Deallocate structures used to block on blocking ops. */
     if (c->flags & CLIENT_BLOCKED) unblockClient(c);
     dictRelease(c->bpop.keys);
-    if (c->bpop.listwheres) zfree(c->bpop.listwheres);
 
     /* UNWATCH all the keys */
     unwatchAllKeys(c);

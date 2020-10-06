@@ -692,12 +692,6 @@ typedef struct multiState {
     time_t minreplicas_timeout; /* MINREPLICAS timeout as unixtime. */
 } multiState;
 
-/* List positions to pop/push from/to for BLPOP, BRPOP and BLMOVE commands */
-typedef struct listPopPushPositions {
-    int wherefrom; /* Where to pop from */
-    int whereto;   /* Where to push to */
-} listPopPushPositions;
-
 /* This structure holds the blocking operation state for a client.
  * The fields used depend on client->btype. */
 typedef struct blockingState {
@@ -710,9 +704,12 @@ typedef struct blockingState {
                              * operation such as BLPOP or XREAD. Or NULL. */
     robj *target;           /* The key that should receive the element,
                              * for BLMOVE. */
-    listPopPushPositions *listwheres; /* The positions in the src/dst lists
-                                       * where we want to pop/push an element
-                                       * for BLPOP, BRPOP and BLMOVE. */
+    struct listPos {
+        int wherefrom;      /* Where to pop from */
+        int whereto;        /* Where to push to */
+    } listpos;              /* The positions in the src/dst lists
+                             * where we want to pop/push an element
+                             * for BLPOP, BRPOP and BLMOVE. */
 
     /* BLOCK_STREAM */
     size_t xread_count;     /* XREAD COUNT option. */
@@ -2234,7 +2231,7 @@ int getTimeoutFromObjectOrReply(client *c, robj *object, mstime_t *timeout, int 
 void disconnectAllBlockedClients(void);
 void handleClientsBlockedOnKeys(void);
 void signalKeyAsReady(redisDb *db, robj *key, int type);
-void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeout, robj *target, listPopPushPositions *listwheres, streamID *ids);
+void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeout, robj *target, struct listPos *listpos, streamID *ids);
 
 /* timeout.c -- Blocked clients timeout and connections timeout. */
 void addClientToTimeoutTable(client *c);
