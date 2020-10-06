@@ -895,7 +895,7 @@ void blockingPopGenericCommand(client *c, int where) {
     }
 
     /* If the keys do not exist we must block */
-    blockForKeys(c,BLOCKED_LIST,c->argv + 1,c->argc - 2,timeout,NULL,where,0,NULL);
+    blockForKeys(c,BLOCKED_LIST,c->argv + 1,c->argc - 2,timeout,NULL,where,LIST_NONE,NULL);
 }
 
 void blpopCommand(client *c) {

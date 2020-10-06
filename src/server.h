@@ -332,6 +332,7 @@ extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
 #define CONFIG_REPL_SYNCIO_TIMEOUT 5
 
 /* List related stuff */
+#define LIST_NONE -1
 #define LIST_HEAD 0
 #define LIST_TAIL 1
 #define ZSET_MIN 0
