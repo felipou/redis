@@ -895,7 +895,9 @@ void blockingPopGenericCommand(client *c, int where) {
     }
 
     /* If the keys do not exist we must block */
-    blockForKeys(c,BLOCKED_LIST,c->argv + 1,c->argc - 2,timeout,NULL,where,0,NULL);
+    listPopPushPositions *listwheres = zmalloc(sizeof(listPopPushPositions));
+    listwheres->wherefrom = where;
+    blockForKeys(c,BLOCKED_LIST,c->argv + 1,c->argc - 2,timeout,NULL,listwheres,NULL);
 }
 
 void blpopCommand(client *c) {
@@ -917,7 +919,10 @@ void blmoveGenericCommand(client *c, int wherefrom, int whereto, mstime_t timeou
             addReplyNull(c);
         } else {
             /* The list is empty and the client blocks. */
-            blockForKeys(c,BLOCKED_LIST,c->argv + 1,1,timeout,c->argv[2],wherefrom,whereto,NULL);
+            listPopPushPositions *listwheres = zmalloc(sizeof(listPopPushPositions));
+            listwheres->wherefrom = wherefrom;
+            listwheres->whereto = whereto;
+            blockForKeys(c,BLOCKED_LIST,c->argv + 1,1,timeout,c->argv[2],listwheres,NULL);
         }
     } else {
         /* The list exists and has elements, so

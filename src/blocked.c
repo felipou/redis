@@ -232,8 +232,8 @@ void serveClientsBlockedOnListKey(robj *o, readyList *rl) {
             }
 
             robj *dstkey = receiver->bpop.target;
-            int wherefrom = receiver->bpop.wherefrom;
-            int whereto = receiver->bpop.whereto;
+            int wherefrom = receiver->bpop.listwheres->wherefrom;
+            int whereto = receiver->bpop.listwheres->whereto;
             robj *value = listTypePop(o, wherefrom);
 
             if (value) {
@@ -560,15 +560,14 @@ void handleClientsBlockedOnKeys(void) {
  * stream keys, we also provide an array of streamID structures: clients will
  * be unblocked only when items with an ID greater or equal to the specified
  * one is appended to the stream. */
-void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeout, robj *target, int wherefrom, int whereto, streamID *ids) {
+void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeout, robj *target, listPopPushPositions *listwheres, streamID *ids) {
     dictEntry *de;
     list *l;
     int j;
 
     c->bpop.timeout = timeout;
     c->bpop.target = target;
-    c->bpop.wherefrom = wherefrom;
-    c->bpop.whereto = whereto;
+    c->bpop.listwheres = listwheres;
 
     if (target != NULL) incrRefCount(target);
 
