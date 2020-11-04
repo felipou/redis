@@ -364,25 +364,60 @@ void lsetCommand(client *c) {
 }
 
 void popGenericCommand(client *c, int where) {
+    if (c->argc > 3) {
+        addReply(c,shared.syntaxerr);
+        return;
+    }
     robj *o = lookupKeyWriteOrReply(c,c->argv[1],shared.null[c->resp]);
     if (o == NULL || checkType(c,o,OBJ_LIST)) return;
 
-    robj *value = listTypePop(o,where);
-    if (value == NULL) {
-        addReplyNull(c);
-    } else {
-        char *event = (where == LIST_HEAD) ? "lpop" : "rpop";
+    long count = 1;
+    int reply_array = 0;
+    /* If a count argument as passed, parse it or return an error. */
+    if (c->argc == 3) {
+        if (getLongFromObjectOrReply(c,c->argv[2],&count,NULL) != C_OK)
+            return;
+        if (count <= 0) {
+            addReply(c,shared.emptyarray);
+            return;
+        }
+        reply_array = 1;
+    }
+
+    char *event = (where == LIST_HEAD) ? "lpop" : "rpop";
+    void *arraylen_ptr = NULL;
+    long arraylen = 0;
+
+    if (reply_array) {
+        arraylen_ptr = addReplyDeferredLen(c);
+    }
+
+    /* Remove the element. */
+    do {
+        robj *value = listTypePop(o,where);
 
         addReplyBulk(c,value);
         decrRefCount(value);
-        notifyKeyspaceEvent(NOTIFY_LIST,event,c->argv[1],c->db->id);
+
+        arraylen += 1;
+        server.dirty++;
+
+        if (arraylen == 0) { /* Do this only for the first iteration. */
+            notifyKeyspaceEvent(NOTIFY_LIST,event,c->argv[1],c->db->id);
+            signalModifiedKey(c,c->db,c->argv[1]);
+        }
+
+        /* Remove the key, if indeed needed. */
         if (listTypeLength(o) == 0) {
             notifyKeyspaceEvent(NOTIFY_GENERIC,"del",
                                 c->argv[1],c->db->id);
             dbDelete(c->db,c->argv[1]);
+            break;
         }
-        signalModifiedKey(c,c->db,c->argv[1]);
-        server.dirty++;
+    } while(--count);
+
+    if (arraylen_ptr) {
+        setDeferredArrayLen(c,arraylen_ptr,arraylen);
     }
 }
 
